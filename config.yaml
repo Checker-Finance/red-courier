@@ -1,0 +1,33 @@
+postgres:
+  host: localhost
+  port: 5432
+  user: checker
+  password: checker
+  dbname: db_checker
+  sslmode: disable
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+tasks:
+  - name: sync_customer_map
+    table: customers
+    alias: customer_map
+    structure: map
+    key: customer_id
+    value: display_name
+    schedule: "@every 5m"
+
+  - name: sync_order_stream
+    table: orders
+    alias: order_stream
+    structure: stream
+    key_prefix: order_stream
+    fields: [order_id, amount, created_at]
+    column_map:
+      order_id: id
+      amount: total
+      created_at: timestamp
+    schedule: "0 * * * *"
