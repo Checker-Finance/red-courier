@@ -1,17 +1,18 @@
-package loaders
+package loader
 
 import (
 	"context"
 	"fmt"
-	goredis "github.com/redis/go-redis/v9"
+	
 	"red-courier/internal/config"
+	"red-courier/internal/redis"
 )
 
-type RedisLoader interface {
-	Load(ctx context.Context, client *goredis.Client, key string, rows []map[string]any) error
+type Loader interface {
+	Load(ctx context.Context, rows []map[string]any, cfg config.TaskConfig, r *redis.RedisClient) error
 }
 
-func NewRedisLoader(cfg config.TaskConfig) (RedisLoader, error) {
+func NewLoader(cfg config.TaskConfig) (Loader, error) {
 	switch cfg.Structure {
 	case "map":
 		return &MapLoader{

@@ -25,7 +25,7 @@ func main() {
 	}
 	defer pg.Close()
 
-	rdb, err := redis.NewRedisClient(cfg.Redis)
+	rdb := redis.NewRedisClient(redis.RedisConfig(cfg.Redis))
 	if err != nil {
 		log.Fatalf("Redis error: %v", err)
 	}

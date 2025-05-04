@@ -3,45 +3,53 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/nathanbcrocker/red-courier)](https://goreportcard.com/report/github.com/nathanbcrocker/red-courier)
 [![License](https://img.shields.io/github/license/nathanbcrocker/red-courier)](LICENSE)
 [![Build Status](https://github.com/nathanbcrocker/red-courier/actions/workflows/ci.yml/badge.svg)](https://github.com/nathanbcrocker/red-courier/actions)
-![Go Version](https://img.shields.io/badge/go-1.21-blue)
+![Go Version](https://img.shields.io/badge/go-1.24-blue)
 
-**Red Courier** is a Go-based utility that automatically synchronizes data from a PostgreSQL database to Redis on a configurable schedule. It supports a variety of Redis data structures and allows you to alias both tasks and database columns for clean, consistent Redis key organization.
+**Red Courier** is a lightweight Go-based service that synchronizes data from Postgres into Redis on a scheduled basis. It supports a variety of Redis data structures and incremental syncing using tracking columns. Built for e-commerce data like orders, products, or customer activity, Red Courier helps you populate Redis for caching, real-time analytics, or message processing.
 
 ## Features
+- **Supports Redis data structures**:
+    - `map` (HSET)
+    - `list` (LPUSH)
+    - `set` (SADD)
+    - `sorted_set` (ZADD)
+    - `stream` (XADD)
+- **Incremental syncing** using a tracking column with `>` or `<` comparisons
+- **Cron-style task scheduling**
+- **Field-level mapping and aliasing** for flexible Redis key/value formats
+- Modular loaders and centralized Redis client abstraction
+- Easy to containerize and deploy with Docker and GitHub Actions
 
-- Schedule-based syncing from Postgres to Redis
-- Support for Redis structures:
-    - Hash maps
-    - Lists
-    - Sets
-    - Sorted Sets
-    - Streams
-- Per-task cron scheduling
-- Alias support for:
-    - Task names
-    - Redis keys
-    - Database column names
-- Flexible YAML configuration
-- Minimal dependencies and fast execution
+## Example Use Case
 
-## Installation
+Populate a Redis Stream from a Postgres `orders` table:
 
-```bash
-git clone https://github.com/yourorg/red-courier.git
-cd red-courier
-go build -o red-courier ./cmd/syncer
+```yaml
+tasks:
+  - name: order_stream
+    table: orders
+    alias: order:stream
+    structure: stream
+    fields: [id, status, total_amount, created_at]
+    column_map:
+      total_amount: amount
+    schedule: "@every 10s"
+    tracking:
+      column: created_at
+      operator: ">"
+      last_value_key: checkpoint:order_stream
 ```
 
 ## Configuration
 
-Create a `config.yaml` file in your project root:
+Red Courier expects a `config.yaml` like the following:
 
 ```yaml
 postgres:
   host: localhost
   port: 5432
-  user: myuser
-  password: mypass
+  user: postgres
+  password: secret
   dbname: ecommerce
   sslmode: disable
 
@@ -51,26 +59,45 @@ redis:
   db: 0
 
 tasks:
-  - name: sync_customer_map
-    table: customers
-    alias: customer_map
-    structure: map
-    key: customer_id
-    value: display_name
-    schedule: "@every 5m"
-
-  - name: sync_order_stream
+  - name: recent_orders
     table: orders
-    alias: order_stream
-    structure: stream
-    key_prefix: order_stream
-    fields: [order_id, amount, created_at]
-    column_map:
-      order_id: id
-      amount: total
-      created_at: timestamp
-    schedule: "0 * * * *"
+    structure: map
+    key: id
+    value: status
+    schedule: "@every 30s"
+    tracking:
+      column: updated_at
+      operator: ">"
+      last_value_key: checkpoint:recent_orders
 ```
+
+## Task Options
+
+Each task supports the following:
+
+| Field         | Description                                                                 |
+|---------------|-----------------------------------------------------------------------------|
+| `name`        | Logical name for the task                                                   |
+| `table`       | Postgres table to sync                                                      |
+| `alias`       | Optional key name override for Redis                                        |
+| `structure`   | One of: `map`, `list`, `set`, `sorted_set`, `stream`                        |
+| `key`         | Column name for Redis key (used in map/sorted_set)                          |
+| `value`       | Column name for Redis value                                                 |
+| `score`       | Column for sorted set score (only for `sorted_set`)                         |
+| `fields`      | List of fields to include (used for stream, list)                           |
+| `column_map`  | Optional mapping from logical to physical Postgres columns                 |
+| `schedule`    | Cron expression or `@every` syntax                                          |
+| `tracking`    | Optional object for incremental syncs (see below)                           |
+
+### Tracking Config
+
+```yaml
+tracking:
+  column: updated_at           # Column used to track deltas
+  operator: ">"                # Operator for comparison (">" or "<")
+  last_value_key: checkpoint:orders  # Redis key to persist checkpoint value
+```
+
 
 ## How It Works
 
@@ -80,14 +107,6 @@ tasks:
     - Fetches relevant rows from Postgres
     - Transforms rows based on configuration
     - Publishes them to Redis using the configured structure
-
-## Running the App
-
-```bash
-./red-courier
-```
-
-The application will start a scheduler for each task and begin syncing at the defined interval.
 
 ## Redis Structure Behavior
 

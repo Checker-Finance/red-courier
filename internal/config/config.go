@@ -2,9 +2,8 @@ package config
 
 import (
 	"fmt"
-	"os"
-
 	"gopkg.in/yaml.v3"
+	"os"
 )
 
 type Config struct {
@@ -19,17 +18,17 @@ type PostgresConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	DBName   string `yaml:"dbname"`
-	SSLMode  string `yaml:"sslmode"` // e.g., disable, require
+	SSLMode  string `yaml:"sslmode"`
 }
 
 type RedisConfig struct {
 	Addr     string `yaml:"addr"`
 	Password string `yaml:"password"`
-	DB       int    `yaml:"db"` // e.g., 0
+	DB       int    `yaml:"db"`
 }
 
 type TaskConfig struct {
-	Name      string            `yaml:"name"` // Required
+	Name      string            `yaml:"name"`
 	Table     string            `yaml:"table"`
 	Alias     string            `yaml:"alias,omitempty"`
 	Structure string            `yaml:"structure"`
@@ -39,14 +38,14 @@ type TaskConfig struct {
 	Fields    []string          `yaml:"fields,omitempty"`
 	KeyPrefix string            `yaml:"key_prefix,omitempty"`
 	Schedule  string            `yaml:"schedule"`
-	ColumnMap map[string]string `yaml:"column_map,omitempty"` // key: alias, value: actual DB field
+	ColumnMap map[string]string `yaml:"column_map,omitempty"`
+	Tracking  *TrackingConfig   `yaml:"tracking,omitempty"`
 }
 
-func (t *TaskConfig) ResolveColumn(logicalName string) string {
-	if actual, ok := t.ColumnMap[logicalName]; ok {
-		return actual
-	}
-	return logicalName
+type TrackingConfig struct {
+	Column       string `yaml:"column"`
+	Operator     string `yaml:"operator"`       // ">" or "<"
+	LastValueKey string `yaml:"last_value_key"` // Redis key to store last seen value
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -61,4 +60,18 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func (t *TaskConfig) EffectiveRedisKey() string {
+	if t.Alias != "" {
+		return t.Alias
+	}
+	return t.Table
+}
+
+func (t *TaskConfig) ResolveColumn(logicalName string) string {
+	if actual, ok := t.ColumnMap[logicalName]; ok {
+		return actual
+	}
+	return logicalName
 }
