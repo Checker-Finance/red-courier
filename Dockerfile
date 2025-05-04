@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.21 AS builder
+FROM golang:1.24 AS builder
 
 WORKDIR /app
 COPY . .
 
 RUN go mod tidy && \
-    go build -o red-courier ./cmd/syncer
+    go build -o red-courier ./cmd/courier
 
 FROM gcr.io/distroless/base-debian11
 WORKDIR /red-courier
