@@ -8,6 +8,7 @@
 <p align="center">
   <img src="assets/logo.png" alt="Red Courier Logo" width="200" height="200">
 </p>
+
 **Red Courier** is a lightweight Go-based service that synchronizes data from Postgres into Redis on a scheduled basis. It supports a variety of Redis data structures and incremental syncing using tracking columns. Built for e-commerce data like orders, products, or customer activity, Red Courier helps you populate Redis for caching, real-time analytics, or message processing.
 
 ## Features
