@@ -1,8 +1,8 @@
 # Red Courier
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/nathanbcrocker/red-courier)](https://goreportcard.com/report/github.com/nathanbcrocker/red-courier)
-[![License](https://img.shields.io/github/license/nathanbcrocker/red-courier)](LICENSE)
-[![Build Status](https://github.com/nathanbcrocker/red-courier/actions/workflows/ci.yml/badge.svg)](https://github.com/nathanbcrocker/red-courier/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Checker-Finance/red-courier)](https://goreportcard.com/report/github.com/nathanbcrocker/red-courier)
+[![License](https://img.shields.io/github/license/Checker-Finance/red-courier)](LICENSE)
+[![Build Status](https://github.com/Checker-Finance/red-courier/actions/workflows/ci.yml/badge.svg)](https://github.com/Checker-Finance/red-courier/actions)
 ![Go Version](https://img.shields.io/badge/go-1.24-blue)
 
 **Red Courier** is a lightweight Go-based service that synchronizes data from Postgres into Redis on a scheduled basis. It supports a variety of Redis data structures and incremental syncing using tracking columns. Built for e-commerce data like orders, products, or customer activity, Red Courier helps you populate Redis for caching, real-time analytics, or message processing.
