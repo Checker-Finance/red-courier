@@ -55,6 +55,7 @@ func (t *Task) Run(ctx context.Context) error {
 				maxVal = v
 			}
 		}
+
 		if maxStr, ok := toRedisString(maxVal); ok {
 			if err := t.RedisClient.SetString(ctx, t.Config.Tracking.LastValueKey, maxStr); err != nil {
 				log.Printf("[task:%s] Failed to persist tracking value: %v", t.Config.Name, err)
