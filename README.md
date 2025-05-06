@@ -147,7 +147,7 @@ Each task logs:
 ## Development
 
 ```bash
-go run ./cmd/syncer
+go run ./cmd/courier
 ```
 
 ## License
