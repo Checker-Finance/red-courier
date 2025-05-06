@@ -12,14 +12,22 @@ redis:
   db: 0
 
 tasks:
-  - name: sync_clients
-    table: client_management.t_client
-    alias: clients
+  - name: sync_customer_map
+    table: customers
+    alias: customer_map
     structure: map
-    key: s_id_client
-    value: s_name
-    schedule: "@every 1m"
-    tracking:
-      column: id_client
-      operator: ">"
-      last_value_key: checkpoint:sync_clients
+    key: customer_id
+    value: display_name
+    schedule: "@every 5m"
+
+  - name: sync_order_stream
+    table:
+    alias: order_stream
+    structure: stream
+    key_prefix: order_stream
+    fields: [order_id, amount, created_at]
+    column_map:
+      order_id: id
+      amount: total
+      created_at: timestamp
+    schedule: "0 * * * *"
