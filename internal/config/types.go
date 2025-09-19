@@ -1,16 +1,11 @@
 package config
 
-import (
-	"fmt"
-	"gopkg.in/yaml.v3"
-	"os"
-)
-
 type Config struct {
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`
 	Tasks    []TaskConfig   `yaml:"tasks"`
 	Server   ServerConfig   `yaml:"server_port"`
+	LogSQL   bool           `yaml:"log_sql"`
 }
 
 type ServerConfig struct {
@@ -36,6 +31,7 @@ type TaskConfig struct {
 	Name      string            `yaml:"name"`
 	Table     string            `yaml:"table"`
 	Alias     string            `yaml:"alias,omitempty"`
+	Where     string            `yaml:"where,omitempty"`
 	Structure string            `yaml:"structure"`
 	Key       string            `yaml:"key,omitempty"`
 	Value     string            `yaml:"value,omitempty"`
@@ -45,26 +41,13 @@ type TaskConfig struct {
 	Schedule  string            `yaml:"schedule"`
 	ColumnMap map[string]string `yaml:"column_map,omitempty"`
 	Tracking  *TrackingConfig   `yaml:"tracking,omitempty"`
+	LogSQL    *bool             `yaml:"log_sql"`
 }
 
 type TrackingConfig struct {
 	Column       string `yaml:"column"`
 	Operator     string `yaml:"operator"`       // ">" or "<"
 	LastValueKey string `yaml:"last_value_key"` // Redis key to store last seen value
-}
-
-func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML config: %w", err)
-	}
-
-	return &cfg, nil
 }
 
 func (t *TaskConfig) EffectiveRedisKey() string {

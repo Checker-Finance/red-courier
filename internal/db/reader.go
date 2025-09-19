@@ -3,49 +3,69 @@ package db
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
-
 	_ "github.com/jackc/pgx/v5"
+	"log"
 	"red-courier/internal/config"
 	"red-courier/internal/redis"
+	sqlbuilder "red-courier/internal/sql_builder"
 	"red-courier/internal/util"
 )
 
+//TODO extract SQL generation logic to separate package
+
+// FetchRows retrieves rows from the specified table based on the task configuration.
+// It applies any static WHERE clauses and tracking filters, and returns the results as a slice of maps.
 func (db *Database) FetchRows(ctx context.Context, taskCfg config.TaskConfig, redisClient *redis.RedisClient) ([]map[string]any, error) {
-	table := taskCfg.Table
-	columns := resolveColumns(taskCfg)
-	if len(columns) == 0 {
+	cols := resolveColumns(taskCfg)
+	if len(cols) == 0 {
 		return nil, fmt.Errorf("no columns resolved for task: %s", taskCfg.Name)
 	}
 
-	schema, table := "public", taskCfg.Table
-	if strings.Contains(taskCfg.Table, ".") {
-		parts := strings.SplitN(taskCfg.Table, ".", 2)
-		schema, table = parts[0], parts[1]
-	}
-
-	query := fmt.Sprintf(`SELECT %s FROM "%s"."%s"`, strings.Join(columns, ", "), schema, table)
-	var args []any
-	var firstRun bool
-	var trackingCol string
-
-	// Apply tracking filter if present
+	// Resolve schema.table and tracking context
+	var lastValPtr *string
+	var trackingSpec *sqlbuilder.TrackingSpec
 	if taskCfg.Tracking != nil {
-		trackingCol = taskCfg.ResolveColumn(taskCfg.Tracking.Column)
-		lastValue, err := redisClient.Client.Get(ctx, taskCfg.Tracking.LastValueKey).Result()
-		if lastValue == "" {
-			log.Printf("[task:%s] No checkpoint found in Redis. Fetching all rows.", taskCfg.Name)
-			firstRun = true
-		} else if err != nil {
+		resolvedCol := taskCfg.ResolveColumn(taskCfg.Tracking.Column)
+		trackingSpec = &sqlbuilder.TrackingSpec{
+			Column:       resolvedCol,
+			Operator:     taskCfg.Tracking.Operator,
+			LastValueKey: taskCfg.Tracking.LastValueKey,
+		}
+
+		val, err := redisClient.Client.Get(ctx, taskCfg.Tracking.LastValueKey).Result()
+		if err != nil && err.Error() != "redis: nil" && val == "" {
 			return nil, fmt.Errorf("failed to fetch last value for tracking: %w", err)
-		} else if lastValue != "" {
-			query += fmt.Sprintf(" WHERE %s %s $1", trackingCol, taskCfg.Tracking.Operator)
-			args = append(args, lastValue)
+		}
+		if val != "" {
+			lastValPtr = &val
 		}
 	}
 
-	rows, err := db.Pool.Query(ctx, query, args...)
+	spec, _ := sqlbuilder.FromQualifiedTable(taskCfg.Table, cols, taskCfg.Where, trackingSpec, lastValPtr)
+	plan, err := sqlbuilder.BuildSelect(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	logSQL := taskCfg.EffectiveLogSQL(db.LogSql)
+	if logSQL {
+		// Keep it structured and readable. Redact/limit args if needed.
+		//TODO make configurable to log full args
+		//TODO consider using a proper SQL formatter
+		//TODO consider logging to a file instead of stdout
+		//TODO consider using a proper structured logger like zap or logrus
+		redacted := make([]any, len(plan.Args))
+		for i, a := range plan.Args {
+			s := fmt.Sprint(a)
+			if len(s) > 256 {
+				s = s[:256] + "…(truncated)"
+			}
+			redacted[i] = s
+		}
+		log.Printf("[task:%s] SQL: %s  ARGS: %v", taskCfg.Name, plan.SQL, redacted)
+	}
+
+	rows, err := db.Pool.Query(ctx, plan.SQL, plan.Args...)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}
@@ -59,25 +79,26 @@ func (db *Database) FetchRows(ctx context.Context, taskCfg config.TaskConfig, re
 		if err != nil {
 			return nil, fmt.Errorf("failed to read row values: %w", err)
 		}
-
-		rowMap := make(map[string]any)
-		for i, field := range rows.FieldDescriptions() {
-			rowMap[string(field.Name)] = values[i]
+		rowMap := make(map[string]any, len(values))
+		for i, fd := range rows.FieldDescriptions() {
+			rowMap[string(fd.Name)] = values[i]
 		}
-
 		results = append(results, rowMap)
 
-		// Track max value if full fetch and tracking is enabled
-		if firstRun && trackingCol != "" {
-			v := rowMap[trackingCol]
+		// compute first-run checkpoint if needed
+		if plan.FirstRun && plan.TrackingCol != "" {
+			v := rowMap[plan.TrackingCol]
 			if maxVal == nil || util.CompareAny(v, maxVal) > 0 {
 				maxVal = v
 			}
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-	// On first run, store the new checkpoint
-	if firstRun && maxVal != nil {
+	// Persist initial checkpoint if first run
+	if plan.FirstRun && maxVal != nil && taskCfg.Tracking != nil {
 		if maxStr, ok := util.ToRedisString(maxVal); ok {
 			if err := redisClient.SetString(ctx, taskCfg.Tracking.LastValueKey, maxStr); err != nil {
 				log.Printf("[task:%s] Failed to persist initial checkpoint: %v", taskCfg.Name, err)

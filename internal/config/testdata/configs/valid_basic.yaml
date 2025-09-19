@@ -1,0 +1,6 @@
+tasks:
+  - name: orders_stream
+    table: public.orders
+    structure: stream
+    fields: [id, status, created_at]
+    schedule: "@every 15s"

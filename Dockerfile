@@ -1,15 +1,18 @@
 # syntax=docker/dockerfile:1
+
 FROM golang:1.24 AS builder
-
 WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/red-courier ./cmd/courier
 
-RUN go mod tidy && \
-    go build -o red-courier ./cmd/courier
+FROM gcr.io/distroless/base-debian11:latest
+WORKDIR /app
+COPY --from=builder /app/red-courier ./red-courier
 
-FROM gcr.io/distroless/base-debian11
-WORKDIR /red-courier
-COPY --from=builder /app/red-courier .
-COPY config.yaml .
+USER 65532:65532
 
 ENTRYPOINT ["./red-courier"]

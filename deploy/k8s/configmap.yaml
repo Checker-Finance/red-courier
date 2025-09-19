@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: red-courier-config
+  namespace: red-courier
+data:
+  config.yaml: |
+    # Example; adjust to your app's config keys/format
+    postgres:
+      host: $(POSTGRES_HOST)
+      port: $(POSTGRES_PORT)
+      user: $(POSTGRES_USER)
+      password: $(POSTGRES_PASSWORD)
+      dbname: $(POSTGRES_DB)
+      sslmode: disable
+    redis:
+      addr: $(REDIS_ADDR)
+      password: $(REDIS_PASSWORD)
+      db: $(REDIS_DB)
+    # add your tasks/schedules here

@@ -1,6 +1,6 @@
 server:
   port: :8080
-
+  
 postgres:
   host: localhost
   port: 5432
@@ -8,6 +8,7 @@ postgres:
   password: pass
   dbname: db_name
   sslmode: disable
+  log_sql: true
 
 redis:
   addr: "localhost:6379"

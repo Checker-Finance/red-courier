@@ -69,6 +69,7 @@ func (t *Task) Run(ctx context.Context) error {
 	return nil
 }
 
+// TODO move to util package
 func compareAny(a, b any) int {
 	switch a := a.(type) {
 	case int64:

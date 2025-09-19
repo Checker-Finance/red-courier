@@ -23,6 +23,6 @@ go.work.sum
 .idea
 .DS_Store
 # env file
-.env
-
+./config.yaml
 red-courier
+coverage.out

@@ -1,0 +1,12 @@
+tasks:
+  - name: high_value_new_orders
+    table: public.orders
+    alias: high_value_orders
+    structure: stream
+    fields: [id, status, amount, created_at]
+    schedule: "@every 30s"
+    where: "status = 'NEW' AND amount > 1000"
+    tracking:
+      column: created_at
+      operator: ">"
+      last_value_key: checkpoint:high_value_new_orders

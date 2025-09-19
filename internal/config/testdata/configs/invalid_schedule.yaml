@@ -1,0 +1,6 @@
+tasks:
+  - name: bad_schedule_task
+    table: public.orders
+    fields: [id, status, created_at]
+    structure: stream
+    schedule: "every thirty seconds"
