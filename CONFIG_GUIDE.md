@@ -7,7 +7,7 @@ This document is optimized to help both humans and large language models (LLMs) 
 
 ---
 
-## 🔧 Top-Level Structure
+## Top-Level Structure
 
 A valid `config.yaml` consists of three sections:
 
@@ -32,7 +32,7 @@ tasks:
 
 ---
 
-## 🛠 postgres
+## postgres
 
 Defines how to connect to your PostgreSQL database:
 
@@ -47,7 +47,7 @@ Defines how to connect to your PostgreSQL database:
 
 ---
 
-## 🔌 redis
+## redis
 
 Defines how to connect to Redis:
 
@@ -59,7 +59,7 @@ Defines how to connect to Redis:
 
 ---
 
-## 📦 tasks
+## tasks
 
 A list of one or more task configurations. Each task defines how to query a Postgres table and write the results to Redis.
 
@@ -81,7 +81,7 @@ A list of one or more task configurations. Each task defines how to query a Post
 
 ---
 
-## ⏱ `tracking`
+## tracking
 
 Optional block for incremental sync. If present, Red Courier will:
 - Only fetch rows where the tracking column is newer/older than the last checkpoint.
@@ -97,7 +97,7 @@ Optional block for incremental sync. If present, Red Courier will:
 
 ---
 
-## ✅ Examples
+## Examples
 
 ### Example 1: Streaming New Orders
 
@@ -122,17 +122,17 @@ tasks:
 ```yaml
 tasks:
   - name: sync_clients
-    table: client_management.t_client
+    table: client_management.client
     alias: clients
     structure: map
-    key: s_id_client
+    key: client_id
     value: s_name
     schedule: "@every 5m"
 ```
 
 ---
 
-## 🤖 Prompt Pattern for LLMs
+## Prompt Pattern for LLMs
 
 > You are configuring a Red Courier task.  
 > Output valid YAML where:
@@ -143,7 +143,7 @@ tasks:
 
 ---
 
-## 🔍 Validation Notes
+## Validation Notes
 
 - Every task must declare a `structure`.
 - If `structure: map` or `structure: sorted_set`, then `key` is required.
@@ -152,7 +152,7 @@ tasks:
 
 ---
 
-## 🔗 Links
+## Links
 
 - [Main README](./README.md)
 - [Red Courier GitHub](https://github.com/Checker-Finance/red-courier)

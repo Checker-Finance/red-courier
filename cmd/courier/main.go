@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,6 +39,20 @@ func main() {
 	}
 
 	go sched.Start()
+	port := cfg.Server.Port
+	log.Printf("Server starting on port %s", port)
+
+	if port == "" {
+		port = ":8080"
+	}
+	
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		_ = http.ListenAndServe(port, mux)
+	}()
 
 	// Handle graceful shutdown
 	sig := make(chan os.Signal, 1)
