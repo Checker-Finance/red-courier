@@ -10,6 +10,11 @@ type Config struct {
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`
 	Tasks    []TaskConfig   `yaml:"tasks"`
+	Server   ServerConfig   `yaml:"server_port"`
+}
+
+type ServerConfig struct {
+	Port string `yaml:"port"`
 }
 
 type PostgresConfig struct {

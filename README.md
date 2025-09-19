@@ -52,6 +52,9 @@ tasks:
 Red Courier expects a `config.yaml` like the following:
 
 ```yaml
+server:
+  port: :8080
+
 postgres:
   host: localhost
   port: 5432
