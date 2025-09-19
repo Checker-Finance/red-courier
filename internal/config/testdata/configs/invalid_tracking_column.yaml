@@ -1,0 +1,10 @@
+tasks:
+  - name: bad_tracking_column
+    table: public.orders
+    fields: [id, status, amount, created_at]
+    structure: stream
+    schedule: "@every 1m"
+    tracking:
+      column: updated_at
+      operator: ">"
+      last_value_key: checkpoint:bad_tracking_column

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -15,12 +16,21 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("config.yaml")
+	defaultPath := "config.yaml"
+	envPath := os.Getenv("RED_COURIER_CONFIG")
+	if envPath != "" {
+		defaultPath = envPath
+	}
+
+	cfgPath := flag.String("config", defaultPath, "path to the config file (YAML)")
+	flag.Parse()
+
+	cfg, err := config.LoadConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	pg, err := db.NewDatabase(cfg.Postgres)
+	pg, err := db.NewDatabase(*cfg)
 	if err != nil {
 		log.Fatalf("Postgres error: %v", err)
 	}
@@ -45,7 +55,7 @@ func main() {
 	if port == "" {
 		port = ":8080"
 	}
-	
+
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {

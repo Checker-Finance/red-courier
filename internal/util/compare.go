@@ -65,8 +65,8 @@ func ToRedisString(val any) (string, bool) {
 		return v, true
 	case fmt.Stringer:
 		return v.String(), true
-	case time.Time:
-		return v.Format(time.RFC3339Nano), true
+	//case time.Time:
+	//	return v.Format(time.RFC3339Nano), true
 	case int, int64, float64:
 		return fmt.Sprintf("%v", v), true
 	default:

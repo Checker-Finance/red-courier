@@ -3,7 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
-	
+
 	"red-courier/internal/config"
 	"red-courier/internal/redis"
 )

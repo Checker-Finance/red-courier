@@ -35,7 +35,7 @@ func NewScheduler(ctx context.Context, cfg *config.Config, db *db.Database, redi
 
 		schedule := tcfg.Schedule
 		if schedule == "" {
-			schedule = "@every 5m" // default if not specified
+			schedule = "@every 5m"
 		}
 
 		log.Printf("Scheduling task %s to run %s", tcfg.Name, schedule)
@@ -62,7 +62,7 @@ func NewScheduler(ctx context.Context, cfg *config.Config, db *db.Database, redi
 func (s *Scheduler) Start() {
 	log.Println("Starting scheduler...")
 	s.cron.Start()
-	select {} // block forever
+	select {}
 }
 
 func (s *Scheduler) Stop() {

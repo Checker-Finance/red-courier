@@ -1,0 +1,8 @@
+tasks:
+  - name: daily_trades_snapshot
+    table: public.trades
+    structure: snapshot
+    fields: [trade_id, client_id, instrument, price, executed_at]
+    # run at midnight every day
+    schedule: "0 0 * * *"
+    where: "executed_at >= now() - interval '1 day'"
